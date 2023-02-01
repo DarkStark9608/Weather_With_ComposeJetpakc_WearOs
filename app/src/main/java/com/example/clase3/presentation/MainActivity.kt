@@ -35,8 +35,8 @@ import com.google.android.gms.location.*
 
 
 class MainActivity : ComponentActivity() {
-    private lateinit var fusedLocationClient : FusedLocationProviderClient
-    private lateinit var locationUtil : LocationManager
+     lateinit var fusedLocationClient : FusedLocationProviderClient
+     lateinit var locationUtil : LocationManager
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,7 +53,7 @@ class MainActivity : ComponentActivity() {
         locationUtil= LocationManager()
 locationUtil.createLocationRequest(this, fusedLocationClient)
         setContent {
-            WearApp(locationUtil)
+            prueba(locationUtil)
         }
     }
 }
