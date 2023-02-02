@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 
-class LocationManager {
+class LocationManager  {
     val dataLoaded = mutableStateOf(false)
 
     val data = mutableStateOf(
@@ -51,7 +51,7 @@ class LocationManager {
                         CoroutineScope(Dispatchers.IO).launch {
                             val weatherDTO = WeatherApi.apiInstance.getWeatherDetails(
                                 location.latitude,
-                                location.longitude, "c91e6335bd43e213a633591b50b326b9")
+                                location.longitude, "71caf2c7c215536c260ae4f58e9209d0")
                             data.value = CardData(
                                 weatherInfo = weatherDTO.weather[0].description,
                                 time = "${(weatherDTO.main.temp - 273).roundToInt()}°C",

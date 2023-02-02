@@ -24,19 +24,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextIndent
 import androidx.navigation.NavController
 import com.example.clase3.R
 
 import com.example.clase3.presentation.theme.Clase3Theme
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
-import com.google.accompanist.permissions.rememberPermissionState
 import com.google.android.gms.location.*
 
 import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
 import androidx.wear.compose.navigation.SwipeDismissableNavHost
-import  androidx.wear.compose.navigation.rememberSwipeDismissableNavController
 import androidx.wear.compose.navigation.composable
 import androidx.wear.input.RemoteInputIntentHelper
 import androidx.wear.input.wearableExtender
@@ -45,7 +42,7 @@ import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import com.google.accompanist.pager.rememberPagerState
-
+import android.content.SharedPreferences
 
 @Composable
 fun ButtonWidget(
@@ -138,15 +135,6 @@ fun WearApp(locationUtil: LocationManager){
                     }
                     item{ Spacer(modifier = Modifier.size(20.dp))
                     }
-                    /*item {         Button(onClick = { navController.navigate(NavRoute.KEYBOARDSCREEN){
-                        popUpTo("MainActivity") {inclusive= true}
-
-                    } }) {
-                        Text(text = "Hola")
-                    }}*/
-
-
-
                 }
             }
             else{
@@ -170,20 +158,17 @@ else{
 
 @OptIn(ExperimentalPagerApi::class)
 @Composable
-fun SearchScreen(navController: NavController,locationUtil: LocationManager) {
+fun SearchScreen(navController: NavController,locationUtil: LocationManager, sharedPreferences: SharedPreferences) {
     val navControllerHorizontal = rememberSwipeDismissableNavController()
     val pagerState = rememberPagerState(
         initialPage = 0
     )
     Scaffold(modifier = Modifier.fillMaxSize()) {
-
-
         SwipeDismissableNavHost(
             navController = navControllerHorizontal,
             modifier = Modifier.fillMaxSize(),
             startDestination = "second"
         ) {
-
             composable(route = "start") {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -205,14 +190,17 @@ fun SearchScreen(navController: NavController,locationUtil: LocationManager) {
                         modifier = Modifier.fillMaxSize()
                     ) { page ->
                         if (page == 0) {
-                            TextInputs("Latitud")
+                            TextInputs("Latitud", sharedPreferences)
                         }
                         if (page == 1) {
-                            TextInputs("Longitud")
+                            TextInputs("Longitud", sharedPreferences)
                         }
                         if (page == 2) {
-                            Button(onClick = { /*TODO*/ }) {
+                            Button(onClick = {
+                                navController.navigate(NavRoute.BUSCAR)
+                            }) {
                                 Text(text = "Buscar")
+
                             }
                         }
                         if (page == 3) {
@@ -220,9 +208,7 @@ fun SearchScreen(navController: NavController,locationUtil: LocationManager) {
                                 Text(text = "Atras")
                             }
                         }
-
                     }
-
                     HorizontalPagerIndicator(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
@@ -240,7 +226,7 @@ fun SearchScreen(navController: NavController,locationUtil: LocationManager) {
     }
 }
     @Composable
-    fun HomeScreen(navController: NavController, locationUtil: LocationManager) {
+    fun HomeScreen(navController: NavController, locationUtil: LocationManager, sharedPreferences: SharedPreferences) {
         Column(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.Center,
@@ -261,19 +247,15 @@ fun SearchScreen(navController: NavController,locationUtil: LocationManager) {
 
 
 @Composable
-fun KeyBoard(navegacion: NavController){
-TextInputs("Hola")
-}
-object NavRoute {
+fun KeyBoard(navegacion: NavController, sharedPreferences: SharedPreferences){
 
-    const val HOMESCREEN = "HomeScreen"
-    const val  SEARCHSCREEN= "SearchScreen/{id}"
-    const val  KEYBOARDSCREEN= "keyboardScreen"
-    const val MAINACTIVITY ="MainActivity"
-    const val AUTOMATICO="Automatico"
+
 }
+
+
 @Composable
-fun TextInputs(key:String) {
+fun TextInputs(key:String, sharedPreferences: SharedPreferences) {
+    val globalText:String
     val label = remember { mutableStateOf(key) }
     val launcher =
         rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
@@ -281,6 +263,9 @@ fun TextInputs(key:String) {
                 val results: Bundle = RemoteInput.getResultsFromIntent(data)
                 val ipAddress: CharSequence? = results.getCharSequence("ip_address")
                val ip= ipAddress.toString()
+                var editor = sharedPreferences.edit()
+                editor.putString(key, ip)
+                editor.commit()
                 Log.i("TAG", "TextInputs: $ip")
                 label.value = ipAddress.toString()
             }
@@ -304,20 +289,72 @@ fun TextInputs(key:String) {
                                 setInputActionType(EditorInfo.IME_ACTION_DONE)
                             }.build()
                     )
-
                     RemoteInputIntentHelper.putRemoteInputsExtra(intent, remoteInputs)
-
                     launcher.launch(intent)
                 }
             )
         }
     }
+}
+
+@Composable
+fun Buscar(navController: NavController, sharedPreferences: SharedPreferences){
+
+    val latitud = sharedPreferences.getString("Latitud", "0")
+
+    val longitud = sharedPreferences.getString("Longitud", "0")
+    Log.i("Latitud",  latitud.toString())
+    Log.i("Longitud",  longitud.toString())
+    Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally){
+        Spacer(modifier =Modifier.size(10.dp))
+        Text(text = longitud.toString(), color = Color.White)
+        Text(text = latitud.toString(), color = Color.White)
+        Button(onClick = {
+            val sharedPreference=sharedPreferences
+            val location2=ManualLocationManager()
+            location2.createLocationRequest(longitud?.toDouble() ?:0.0, latitud?.toDouble() ?: 0.0,
+              sharedPreference, navController)
+
+
+
+        }) {
+            Text(text ="Buscar")
+        }
+    }
+
+
+}
+
+@Composable
+fun parametros(navController: NavController, sharedPreferences: SharedPreferences){
+    val title =sharedPreferences.getString("name", "0")
+    val weatherDes =sharedPreferences.getString("weatherInfo", "0")
+    val time =sharedPreferences.getString("time", "0")
+    val temp =sharedPreferences.getString("temp", "0")
+
+
+
+
+
+    CardComponent(title = title.toString(), weatherDes =weatherDes.toString() ,
+        time =time.toString() , temp = temp?.toDouble() ?:0.0 )
 
 }
 
 
+object NavRoute {
+
+    const val HOMESCREEN = "HomeScreen"
+    const val  SEARCHSCREEN= "SearchScreen/{id}"
+    const val  KEYBOARDSCREEN= "keyboardScreen"
+    const val MAINACTIVITY ="MainActivity"
+    const val AUTOMATICO="Automatico"
+    const val BUSCAR="Buscar"
+    const val PARAMETROS="Parametros"
+}
+
 @Composable
-fun prueba(  locationUtil: LocationManager = LocationManager()){
+fun prueba( locationUtil: LocationManager = LocationManager(), sharedPreferences: SharedPreferences){
 
     val navController = rememberSwipeDismissableNavController()
     SwipeDismissableNavHost(
@@ -325,19 +362,25 @@ fun prueba(  locationUtil: LocationManager = LocationManager()){
         startDestination = NavRoute.HOMESCREEN
     ) {
         composable(NavRoute.HOMESCREEN) {
-            HomeScreen(navController, locationUtil)
+            HomeScreen(navController, locationUtil, sharedPreferences)
         }
         composable(NavRoute.SEARCHSCREEN) {
-            SearchScreen(navController, locationUtil)
+            SearchScreen(navController, locationUtil, sharedPreferences)
         }
         composable(NavRoute.KEYBOARDSCREEN){
-            KeyBoard(navController)
+            KeyBoard(navController, sharedPreferences)
         }
         composable(NavRoute.MAINACTIVITY){
             MainActivity()
         }
         composable(NavRoute.AUTOMATICO){
             WearApp(locationUtil)
+        }
+        composable(NavRoute.BUSCAR){
+            Buscar(navController, sharedPreferences)
+        }
+        composable(NavRoute.PARAMETROS){
+            parametros(navController, sharedPreferences)
         }
     }
 }
